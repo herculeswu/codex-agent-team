@@ -1,6 +1,6 @@
 # Codex Agent Team Operating Manual
 
-Version date: 2026-10-02  
+Version date: 2026-10-03  
 Purpose: Configure Codex as a software development agent team that can sustain progress.  
 Recommended location: Place this file at the root of the target repository and keep the filename `CODEX_AGENT_TEAM.md`.
 
@@ -953,6 +953,8 @@ Artifact rules:
 
 Goal: Show the user who is working on what, agent discussions, task status, PRs, tests, deployments, and token/cost information.
 
+Default visualization: KalebKE/PixelOffice plus the companion evidence dashboard. See Sections 14.5-14.8 for setup, identity mapping, and acceptance.
+
 ### 14.1 Minimal Dashboard
 
 Maintain Markdown files without an additional application:
@@ -963,7 +965,7 @@ Maintain Markdown files without an additional application:
 
 Suitable for personal projects, low-cost operation, and quick setup.
 
-### 14.2 Local Web Dashboard
+### 14.2 Companion Web Dashboard
 
 Codex can implement a local dashboard, for example:
 
@@ -1051,6 +1053,98 @@ Recommended signals:
 
 ---
 
+### 14.5 Default Visualization: PixelOffice and a Companion Dashboard
+
+Selected project: https://github.com/KalebKE/PixelOffice
+Upstream setup reference: https://github.com/KalebKE/PixelOffice#readme
+Selection date: 2026-10-03.
+
+Use PixelOffice as the default live office view for both Codex and Claude Code. Retain the web dashboard in Section 14.2 as a companion for project evidence. Neither component is installed merely by reading this manual.
+
+Responsibilities:
+- PixelOffice shows observable runtime activity.
+- The companion shows named roles, tasks, discussions, gates, PRs, QA, deployments, and usage.
+- The Orchestrator owns the shared project record; workers supply handoffs.
+- The execution supervisor owns retries and recovery. Visualization must not drive gate approval.
+
+### 14.6 Setup and Verification
+
+Check the installed agent runtime and upstream integration before setup. Record the PixelOffice commit and compatible runtime versions in `docs/agent-team/dashboard-spec.md`. Preserve existing hook configuration.
+
+PixelOffice requires JDK 17+ and Python 3. In its checkout:
+
+```sh
+./start.sh
+python3 hooks/manage_hooks.py install
+python3 hooks/manage_hooks.py status
+```
+
+The installer integrates both runtimes and backs up existing settings. Codex additionally requires reviewing and trusting the installed definitions through `/hooks`. Restart existing agent sessions after first installation.
+
+Its default local event receivers are UDP `127.0.0.1:9997` and HTTP `http://127.0.0.1:3003/api/events`. If a runtime cannot use the bundled hooks, build a verified adapter for the upstream AgentEvent protocol; never claim native support in an untested client.
+
+Bootstrap verification:
+- A real session creates a visible worker.
+- Reading, editing, command execution, and waiting produce appropriate state changes.
+- A real delegated worker appears separately where the runtime emits its lifecycle.
+- Session exit removes the worker or marks its last-known state.
+- Closing PixelOffice does not interrupt engineering work.
+- Restarting the viewer recovers activity from fresh events.
+- Disable demo mode for acceptance testing; screenshots of simulated workers are not proof of integration.
+
+### 14.7 Identity and Event Separation
+
+Upstream runtime identity combines provider, session ID, and agent ID. Maintain a separate mapping in `docs/agent-team/agent-identities.json`:
+
+```json
+{
+  "agents": [
+    {
+      "provider": "codex",
+      "session_id": "<actual-session-id>",
+      "agent_id": "<actual-worker-id>",
+      "name": "Rhea",
+      "role": "Independent Code Reviewer",
+      "task_id": "TASK-014",
+      "branch": "feature/example"
+    }
+  ]
+}
+```
+
+Use `claude` for Claude workers in the companion record and translate provider identifiers according to the upstream protocol. Resolve actual IDs from emitted events, not invented employee names. This mapping belongs to our companion layer, not an undocumented PixelOffice setting.
+
+Do not send the rich dashboard event schema above directly to PixelOffice: implement a separate protocol adapter. Keep conversation summaries and gate evidence in the companion event log. Missing token or billing information stays null; estimates must be labeled.
+
+PixelOffice's bridge sends compact activity state rather than prompts, tool output, or file contents. Its social animations are not actual agent conversations. Display only explicitly logged discussion summaries as team communication, and do not present hidden reasoning as telemetry.
+
+### 14.8 Integration Architecture
+
+```text
+Codex / Claude runtime hooks
+  -> PixelOffice bridge -> live office
+  -> project event collector -> companion dashboard
+
+Git / PR / CI / QA / deployment evidence
+  -> project event collector -> companion dashboard
+
+Orchestrator / supervisor
+  -> status, identity map, decisions, gate evidence
+  -> companion dashboard
+```
+
+Keep receivers on loopback by default. The upstream receiver has no authentication or encryption; a shared remote viewer requires a deliberately designed access layer.
+
+Acceptance requires a real run that can be traced from a named worker to a task and its evidence. Mark office setup, companion implementation, runtime integration, and supervisor status separately. An animated worker alone cannot prove that a review passed or that a deployment succeeded.
+
+Use this project prompt:
+
+```text
+Implement the visualization specified in Section 14 of this manual. Use KalebKE/PixelOffice for the live office and a companion dashboard for team evidence. Preserve existing settings, verify actual runtime events, map session/worker IDs to team roles, and prove the flow with a real delegated task. Report any unsupported runtime integration explicitly.
+```
+
+---
+
 ## 15. Required vs Optional Tools
 
 ### Required
@@ -1063,6 +1157,8 @@ Recommended signals:
 - OpenAI Docs MCP for OpenAI/Codex/API questions.
 
 ### Strongly Recommended
+
+- KalebKE/PixelOffice as the default live office viewer; the companion evidence dashboard follows Section 14.
 
 - GitHub or GitLab integration for PR/review.
 - CI system.
@@ -1089,7 +1185,7 @@ Recommendation:
 
 - Start with Codex native flow + Markdown artifacts + Git branches.
 - Add GitHub/GitLab PR integration and CI next.
-- Add dashboard only after the workflow proves useful.
+- Integrate the selected PixelOffice viewer and companion evidence dashboard using the verified setup in Section 14.
 - Use LangGraph/Temporal only if you need durable programmatic orchestration outside Codex.
 
 ---
@@ -1239,7 +1335,7 @@ Do not deploy to production until I explicitly approve production deployment.
 Use this if you want Codex to build the visualization dashboard:
 
 ```text
-Using CODEX_AGENT_TEAM.md, design and implement a local Agent Team dashboard for this repo.
+Using CODEX_AGENT_TEAM.md, implement the PixelOffice integration and companion Agent Team dashboard specified in Section 14 for this repo.
 
 It should read docs/agent-team/status.md, event-log.md, task-breakdown.md, review.md, qa-report.md, and deployment-plan.md.
 
