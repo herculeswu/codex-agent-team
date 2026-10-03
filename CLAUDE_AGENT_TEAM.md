@@ -724,6 +724,8 @@ Challenge rules:
 
 ## 9. Ralph Loop
 
+When Paperclip is enabled, it is the sole scheduler; Section 14.9 governs task wakeups and recovery. This loop describes the team's execution policy. Do not run a parallel autonomous supervisor for the same tasks.
+
 This manual uses Read, Act, Log, Pass, and Heal as project-specific steps for a Ralph-style iteration loop. These steps are not an official expansion of the name Ralph.
 
 The inner harness loop executes one agent task. The outer project loop advances gates and rework across roles. An external supervisor is required to restart runs after process exit; a prompt or Stop hook alone cannot guarantee persistence.
@@ -950,7 +952,7 @@ Artifact rules:
 
 Goal: Show the user who is working on what, agent discussions, task status, PRs, tests, deployments, and token/cost information.
 
-Default visualization: KalebKE/PixelOffice plus the companion evidence dashboard. See Sections 14.5-14.8 for setup, identity mapping, and acceptance.
+Default stack: Paperclip as the primary dashboard and sole scheduler, plus KalebKE/PixelOffice as the live activity viewer. See Sections 14.5-14.9 for setup, workflow mappings, and acceptance.
 
 ### 14.1 Minimal Dashboard
 
@@ -962,9 +964,9 @@ Maintain Markdown files without an additional application:
 
 Suitable for personal projects, low-cost operation, and quick setup.
 
-### 14.2 Companion Web Dashboard
+### 14.2 Paperclip Dashboard and Minimal Extensions
 
-Claude Code can implement a local dashboard, for example:
+Use Paperclip for the main dashboard. Implement only missing evidence integrations or small companion views, for example:
 
 ```text
 apps/agent-dashboard/
@@ -1050,19 +1052,19 @@ Recommended signals:
 
 ---
 
-### 14.5 Default Visualization: PixelOffice and a Companion Dashboard
+### 14.5 Default Visualization: Paperclip and PixelOffice
 
 Selected project: https://github.com/KalebKE/PixelOffice
 Upstream setup reference: https://github.com/KalebKE/PixelOffice#readme
 Selection date: 2026-10-03.
 
-Use PixelOffice as the default live office view for both Codex and Claude Code. Retain the web dashboard in Section 14.2 as a companion for project evidence. Neither component is installed merely by reading this manual.
+Use PixelOffice as the default live office view for both Codex and Claude Code. Use Paperclip as the primary team dashboard and scheduler. Limit custom dashboard work to gaps identified in Section 14.9. Neither component is installed merely by reading this manual.
 
 Responsibilities:
 - PixelOffice shows observable runtime activity.
-- The companion shows named roles, tasks, discussions, gates, PRs, QA, deployments, and usage.
+- Paperclip shows team roles, tasks, communication, approvals, runs, and available usage; integrate PR, QA, and deployment evidence as specified in Section 14.9.
 - The Orchestrator owns the shared project record; workers supply handoffs.
-- The execution supervisor owns retries and recovery. Visualization must not drive gate approval.
+- Paperclip is the sole scheduling owner. Verify retry and recovery behavior against Section 14.9; visual activity must not drive gate approval.
 
 ### 14.6 Setup and Verification
 
@@ -1109,9 +1111,9 @@ Upstream runtime identity combines provider, session ID, and agent ID. Maintain 
 }
 ```
 
-Use `claude` for Claude workers in the companion record and translate provider identifiers according to the upstream protocol. Resolve actual IDs from emitted events, not invented employee names. This mapping belongs to our companion layer, not an undocumented PixelOffice setting.
+Use `claude` for Claude workers in the shared identity record and translate provider identifiers according to the upstream protocol. Resolve actual IDs from emitted events, not invented employee names. This mapping belongs to our project integration layer, not an undocumented PixelOffice setting.
 
-Do not send the rich dashboard event schema above directly to PixelOffice: implement a separate protocol adapter. Keep conversation summaries and gate evidence in the companion event log. Missing token or billing information stays null; estimates must be labeled.
+Do not send the rich dashboard event schema above directly to PixelOffice: implement a separate protocol adapter. Keep conversation summaries and gate evidence in the shared project event log. Missing token or billing information stays null; estimates must be labeled.
 
 PixelOffice's bridge sends compact activity state rather than prompts, tool output, or file contents. Its social animations are not actual agent conversations. Display only explicitly logged discussion summaries as team communication, and do not present hidden reasoning as telemetry.
 
@@ -1120,24 +1122,102 @@ PixelOffice's bridge sends compact activity state rather than prompts, tool outp
 ```text
 Codex / Claude runtime hooks
   -> PixelOffice bridge -> live office
-  -> project event collector -> companion dashboard
+  -> project event collector -> Paperclip evidence integration
 
 Git / PR / CI / QA / deployment evidence
-  -> project event collector -> companion dashboard
+  -> project event collector -> Paperclip evidence integration
 
-Orchestrator / supervisor
+Paperclip scheduler -> Codex / Claude runtime adapters
+
+Orchestrator
   -> status, identity map, decisions, gate evidence
-  -> companion dashboard
+  -> Paperclip tasks and linked repository artifacts
 ```
 
 Keep receivers on loopback by default. The upstream receiver has no authentication or encryption; a shared remote viewer requires a deliberately designed access layer.
 
-Acceptance requires a real run that can be traced from a named worker to a task and its evidence. Mark office setup, companion implementation, runtime integration, and supervisor status separately. An animated worker alone cannot prove that a review passed or that a deployment succeeded.
+Acceptance requires a real run that can be traced from a named worker to a task and its evidence. Mark Paperclip setup, office integration, evidence adapters, and scheduling/recovery status separately. An animated worker alone cannot prove that a review passed or that a deployment succeeded.
 
 Use this project prompt:
 
 ```text
-Implement the visualization specified in Section 14 of this manual. Use KalebKE/PixelOffice for the live office and a companion dashboard for team evidence. Preserve existing settings, verify actual runtime events, map session/worker IDs to team roles, and prove the flow with a real delegated task. Report any unsupported runtime integration explicitly.
+Implement the visualization specified in Section 14 of this manual. Use Paperclip as the primary dashboard and sole scheduler, plus KalebKE/PixelOffice for live activity. Follow Section 14.9 for gate and evidence mappings. Preserve existing settings, verify actual runtime events, map session/worker IDs to team roles, and prove the flow with a real delegated task. Report any unsupported runtime integration explicitly.
+```
+
+---
+
+### 14.9 Paperclip Control Plane
+
+Selected dashboard and orchestration project: https://github.com/paperclipai/paperclip
+Upstream documentation: https://docs.paperclip.ing/
+Selection date: 2026-10-03.
+
+Paperclip supplies the primary team console and scheduling layer. It supports Codex and Claude Code adapters, agent roles, tasks, approvals, run history, and budgets. Verify the installed release and adapter capabilities before configuration.
+
+The remaining instructions are our team's integration requirements, not claims that every workflow below is already provided by an upstream installation.
+
+#### Team and Runtime Mapping
+
+Create a project for the target repository and map Avery, Linus, Mira, Nova, Kai, Rhea, Sofia, and Omar to distinct role identities. Apply this manual's personas, model routing, and permission boundaries. Record the Paperclip identity, runtime, effective model, repository, and working directory in `docs/agent-team/agent-identities.json`.
+
+A task names one owner and a specific artifact or result. Use separate review and QA assignments; never close an implementation task as evidence that independent review passed.
+
+Distinguish a Paperclip-managed role from its temporary runtime subagents. Do not schedule the same role independently in both layers. If a user-created interactive session is outside Paperclip, label it unmanaged until deliberately attached through a verified integration.
+
+#### Gate and Evidence Mapping
+
+Configure this workflow using supported tasks, dependencies, and approvals. Implement a small integration only for missing capabilities:
+
+| Phase | Owner | Required evidence | Next step |
+|---|---|---|---|
+| Requirements | Avery | Approved PRD/spec or recorded fast path | Architecture/design |
+| Architecture/design | Linus/Mira | Contracts, ADRs, design states | Implementation |
+| Implementation | Nova/Kai | Commit, changed files, test output | Independent review |
+| Review | Rhea | Findings, verdict, reviewed commit SHA | QA or rework |
+| QA | Sofia | Test report, tested commit SHA | Release planning or rework |
+| Release | Omar | CI, staging result, rollback, user authorization | Deployment |
+
+Bind review and QA evidence to the relevant commit. New code changes invalidate affected approvals. A generic task status or heartbeat completion is not a review verdict.
+
+Link actual GitHub PRs, CI runs, screenshots, QA reports, and deployment records. Start with explicit links; add automatic synchronization only after verifying permissions and event semantics. Mark absent evidence as missing rather than presenting a green gate.
+
+Log agent questions, replies, challenges, and decisions as task comments or linked event records. This is explicit team communication, not private model reasoning.
+
+#### One Scheduling Owner
+
+With Paperclip enabled, it owns task wakeups and scheduling. Avery owns product decisions and work routing; the native harness executes tool calls. The Ralph loop remains the read/act/log/handoff/rework policy.
+
+Do not also run an independent Codex automation, Claude headless supervisor, or other scheduler for the same tasks. Keep any fallback runner disabled until ownership is explicitly transferred and in-flight work is reconciled.
+
+Persist task/run IDs, session IDs, gate state, and retries. Configure available heartbeat and budget controls. Verify actual pause, stop, interrupted-run recovery, and retry behavior; supplement only gaps. These are acceptance requirements, not a promise of uninterrupted execution after host shutdown.
+
+#### Visualization and Usage
+
+Paperclip is the primary place to inspect work and approvals. PixelOffice remains a live activity viewer fed by runtime hooks. Build and test their bridge; do not assume a native Paperclip-to-PixelOffice integration exists.
+
+Show available usage data with its source. Keep unavailable counts or cost null and label estimates. API cost estimates must not be presented as exact subscription charges.
+
+Langfuse is optional for later tracing and evaluation. Do not install it in the first iteration merely to duplicate the main dashboard.
+
+#### Bootstrap Acceptance
+
+Before claiming the control plane is ready:
+- Pin and record the Paperclip version and verified adapter setup.
+- Create and verify the required roles and project.
+- Run a harmless task through a real runtime adapter.
+- Demonstrate separate implementation, review, and QA ownership.
+- Verify a failed gate returns work to its owner and invalidates affected approvals.
+- Trace a task to its run, branch/worktree, commit, and evidence.
+- Demonstrate live PixelOffice activity from that run.
+- Verify only one scheduler owns the task.
+- Confirm pause/resume behavior and document any remaining recovery limitations.
+
+Save verified setup commands, local URL, integrations, and capability gaps in `docs/agent-team/dashboard-spec.md`. Preserve the repository artifacts as portable specifications and evidence; reconcile them with Paperclip at explicit task transitions, using Avery as the single writer.
+
+Bootstrap prompt:
+
+```text
+Read this manual and configure Paperclip as the primary dashboard and sole scheduler, with PixelOffice as the live activity viewer. Map the eight roles and their model/permission boundaries, implement the review/QA/deployment gate mappings, and link real GitHub/CI evidence. Verify both runtime adapters as applicable and a real task-to-office flow. Report missing capabilities explicitly. Do not launch a second scheduler or deploy to production without authorization.
 ```
 
 ---
@@ -1155,7 +1235,8 @@ Implement the visualization specified in Section 14 of this manual. Use KalebKE/
 
 ### Strongly Recommended
 
-- KalebKE/PixelOffice as the default live office viewer; the companion evidence dashboard follows Section 14.
+- Paperclip as the default team dashboard and sole scheduler.
+- KalebKE/PixelOffice as the live office viewer, with a verified runtime event bridge.
 
 - GitHub or GitLab integration for PR/review.
 - CI system.
@@ -1182,7 +1263,8 @@ Recommendation:
 
 - Start with Claude Code native flow + Markdown artifacts + Git branches.
 - Add GitHub/GitLab PR integration and CI next.
-- Integrate the selected PixelOffice viewer and companion evidence dashboard using the verified setup in Section 14.
+- Configure Paperclip and PixelOffice according to Section 14; implement only missing integrations.
+- Keep Langfuse optional until deeper tracing is needed.
 - Use LangGraph/Temporal only if you need durable programmatic orchestration outside Claude Code.
 
 ---
@@ -1334,7 +1416,7 @@ Do not deploy to production until I explicitly approve production deployment.
 Use this if you want Claude Code to build the visualization dashboard:
 
 ```text
-Using CLAUDE_AGENT_TEAM.md, implement the PixelOffice integration and companion Agent Team dashboard specified in Section 14 for this repo.
+Using CLAUDE_AGENT_TEAM.md, configure Paperclip as the primary dashboard and sole scheduler, and integrate PixelOffice as specified in Section 14 for this repo.
 
 It should read docs/agent-team/status.md, event-log.md, task-breakdown.md, review.md, qa-report.md, and deployment-plan.md.
 
@@ -1474,7 +1556,7 @@ Dashboard events must represent actual tool/session activity or clearly labeled 
 
 ### 26.5 Bounded External Ralph Supervisor
 
-Bootstrap `scripts/agent-team/run-loop` as a real, testable supervisor if unattended execution is requested. Do not launch it merely because this manual exists.
+Paperclip is the default scheduler under Section 14.9. The following custom supervisor is a fallback only when Paperclip is not in use. Bootstrap `scripts/agent-team/run-loop` only if that fallback is requested, and never run both scheduling systems for the same tasks.
 
 Required behavior:
 - Acquire one project lock and reject duplicate supervisors.
