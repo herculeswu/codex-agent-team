@@ -8,6 +8,8 @@ Recommended location: Place this file at the root of the target repository and k
 
 ## 0. Minimal Startup Prompt for Claude Code
 
+User interface preference: Discuss requirements through native Codex desktop Voice when available, rather than requiring typed prompts or making Paperclip the only discussion entrance. Follow Section 14.10 for meeting requests and confirmed decision synchronization. Paperclip remains the sole task scheduler. Claude Code discussions require an explicit cross-runtime handoff; native voice access and automatic synchronization must be verified, not assumed.
+
 After placing this file at the repository root, open the repository in Claude Code and send:
 
 ```text
@@ -1218,6 +1220,61 @@ Bootstrap prompt:
 
 ```text
 Read this manual and configure Paperclip as the primary dashboard and sole scheduler, with PixelOffice as the live activity viewer. Map the eight roles and their model/permission boundaries, implement the review/QA/deployment gate mappings, and link real GitHub/CI evidence. Verify both runtime adapters as applicable and a real task-to-office flow. Report missing capabilities explicitly. Do not launch a second scheduler or deploy to production without authorization.
+```
+
+---
+
+### 14.10 Native Voice Discussions and Decision Bridge
+
+#### Default User Experience
+
+Use native Voice in the desktop application's Codex chat as the user's primary requirements and discussion interface when available to their account. The user speaks; Avery clarifies requirements and summarizes decisions. Voice chat is distinct from dictation. Paperclip remains the system of record for tasks, decisions, approvals, and execution, and the sole scheduler. PixelOffice remains an activity viewer.
+
+Do not install LiveKit, OpenAI Realtime API integrations, or cloud speech services by default. They are optional alternatives only after an explicit request and agreement about additional billing. Native desktop Voice uses plan usage, not an unlimited entitlement; voice and delegated task execution consume usage according to current official pricing. Do not hard-code rates as permanent or silently switch subscription-authenticated execution to API-key billing.
+
+References, verified 2026-10-03:
+- https://learn.chatgpt.com/docs/features/voice
+- https://learn.chatgpt.com/docs/pricing
+
+#### Requesting a Discussion
+
+Provide a shared MCP tool or equivalent authenticated integration named `request_meeting`. This is a custom capability to implement and test, not an existing native tool promised by this manual. Each request records:
+- Unique meeting/request ID, project/task ID, requesting role, and original runtime/session ID.
+- Reason, urgency, concise context, links to relevant artifacts, options, recommendation, and specific questions.
+- Decisions required, affected tasks, and permission or approval requirements.
+
+Coalesce repeated requests for the same unresolved decision. Notify the user with a link to the verified discussion chat, or clear navigation instructions if no supported link exists. The user starts native Voice and grants microphone access. Do not promise programmatic initiation of native Voice, auto-enable a microphone, or create a new chat without authorization. Hooks can assist notifications but must not treat every run completion or permission prompt as a meeting request.
+
+#### Context, Identity, and Cross-Runtime Handoff
+
+A native voice conversation does not automatically inherit a Paperclip task or an external Codex/Claude Code session. Bind the discussion to its project, task, meeting ID, artifact revisions, and execution session using supported interfaces. A voice facilitator speaking for Avery is not necessarily the same model or session as the execution agent; identify that distinction and route technical questions back to the original worker when needed.
+
+Claude Code cannot directly use Codex's native Voice as its own audio interface. In the Claude workflow, Claude submits meeting materials; the Codex discussion interface receives them through a verified bridge; confirmed decisions are returned to the original Claude task/session. Neither shared account login nor a role name establishes this connection.
+
+Before integration is verified, use a transparent fallback: expose a concise meeting packet in repository artifacts or the task thread, have the user start Voice in the appropriate chat, and explicitly reconcile the confirmed summary afterward. Never claim automatic synchronization when only manual handoff exists.
+
+#### Decision Record and Approval
+
+Write a meeting summary containing participants, discussion scope, decisions, unresolved questions, affected artifacts/tasks, and proposed next actions. Persist it under `docs/agent-team/meetings/<meeting-id>.md`. Audio recording is off by default; request consent before recording, and disclose transcript retention and external data flows.
+
+Ask the user to confirm the summary, by voice or text, before applying material requirement changes. Record confirmation with identity, timestamp, decision ID, and exact scope. A transcription or an ambiguous conversational acknowledgement is not authorization. Destructive changes, purchases, secret access, merges where approval is required, and production deployment retain their explicit approval gates.
+
+Avery is the single writer responsible for reconciling confirmed decisions into Paperclip and the PRD/spec/ADRs/task plan. Use authenticated, supported APIs or connectors, idempotency keys, and revision checks; failed or conflicting updates remain pending and visible. Do not run implementation directly from the discussion chat while Paperclip owns that task.
+
+#### Ralph Loop Waiting and Recovery
+
+Mark affected tasks as `waiting_for_user_decision` in team state and map this to the installed Paperclip version's supported blocked/waiting state. This label is a team convention, not a claimed built-in status. Save the blocker and meeting ID. Stop repeated retries, duplicate notifications, and speculative implementation for those tasks. Unrelated authorized tasks may continue.
+
+After a confirmed decision has been reconciled, Paperclip alone wakes the affected task. Resume from the last incomplete gate, re-check changed requirements, and invalidate stale review/QA evidence where needed. If no answer arrives, retain the blocker; never manufacture a decision or bypass an approval.
+
+#### Acceptance and Bootstrap
+
+Track meeting notification, native Voice availability, context handoff, decision confirmation, Paperclip writeback, and original-worker resume as separate capabilities in `docs/agent-team/dashboard-spec.md`. Verify them with a harmless real task, including duplicate-request suppression, an unanswered request, conflicting revisions, and denied authorization. Unsupported native chat or session APIs must be documented rather than simulated as working integration.
+
+Bootstrap instruction:
+
+```text
+Use Section 14.10 to make Codex native desktop Voice the user discussion interface while Paperclip remains the sole scheduler and task/decision system of record. Implement and verify meeting requests, notifications, context handoff, confirmed decision writeback, and blocked-task recovery through supported APIs/MCP integrations. Support Claude Code through an explicit cross-runtime handoff, not a claimed native voice connection. Do not add paid voice API services or automatically start microphones. Report manual fallbacks and capability gaps.
 ```
 
 ---
